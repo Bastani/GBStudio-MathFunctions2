@@ -335,8 +335,8 @@ const multGetUpMidLow = (variable1, variable2, helpers) =>
 const compile = (input, helpers) => 
 {
     const {variableSetToValue, variableCopy, variableSetToRandom, ifVariableValue, temporaryEntityVariable, textDialogue} = helpers;
-    const tmp1 = String(400)
-    const tmp2 = String(401)
+    const tmp1 = customTemporaryVariable(14)
+    const tmp2 = customTemporaryVariable(15)
     const variable = input.value % 256, variableMult = Math.floor(input.value / 256);
     switch (input.other) {
         case "var": {
@@ -345,16 +345,32 @@ const compile = (input, helpers) =>
             break;
         }
         case "rnd": {
-            const min = input.minValue || 0;
-            const range = Math.min(variable, Math.max(0, (input.maxValue || 0) - min));
-            const rangeMult = Math.min(variableMult, Math.max(0, (input.maxValue || 0) - min));
-            variableSetToRandom(tmp2, min, rangeMult);
-            ifVariableValue(tmp2, "==", input.maxValue, () => 
+            const minVar = input.minValue % 256, minVarMult = Math.floor(input.minValue / 256);
+            const maxVar = input.maxValue % 256, maxVarMult = Math.floor(input.maxValue / 256);
+            const rangeMin = Math.min(254, Math.max(0, (255 || 0) - minVar));
+            const rangeMed = Math.min(254, Math.max(0, maxVar - minVar));
+            const rangeMax = Math.min(254, Math.max(0, (maxVar || 0)));
+            const rangeMult = Math.min(254, Math.max(0, (maxVarMult || 0) - minVarMult));
+            variableSetToRandom(tmp2, minVarMult, rangeMult); //Trigerring random twice gives better number generation
+            variableSetToRandom(tmp2, minVarMult, rangeMult);
+            ifVariableValue(tmp2, "==", maxVarMult, () => 
             {
-                variableSetToRandom(tmp1, min, range);
+                ifVariableValue(tmp2, "==", minVarMult, () => 
+                {
+                    variableSetToRandom(tmp1, minVar, rangeMed);
+                }, () => 
+                {
+                    variableSetToRandom(tmp1, 0, rangeMax);
+                });
             }, () => 
             {
-                variableSetToRandom(tmp1, 0, 255);
+                ifVariableValue(tmp2, "==", minVarMult, () => 
+                {
+                    variableSetToRandom(tmp1, minVar, rangeMin);
+                }, () => 
+                {
+                    variableSetToRandom(tmp1, 0, 254);
+                });
             });
             break;
         }
